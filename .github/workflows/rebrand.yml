@@ -1,0 +1,42 @@
+name: Rebrand and build
+
+on:
+  push:
+    paths:
+      - 'scripts/**'
+      - '.github/workflows/rebrand.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  rebrand:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Pillow
+        run: pip install Pillow
+      - name: Run rebrand script
+        run: python scripts/rebrand.py
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Build static export
+        run: npm run build
+      - name: Commit rebrand changes
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add app components lib public package.json next.config.mjs README.md
+          git add assets || true
+          git diff --cached --quiet || git commit -m 'Apply Dr Issam Mahjoub rebrand'
+          git push
