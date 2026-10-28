@@ -11,6 +11,7 @@ import { CLINIC, type Lang } from '@/lib/translations'
 const langs: { code: Lang; label: string }[] = [
   { code: 'fr', label: 'FR' },
   { code: 'ar', label: 'عربي' },
+  { code: 'en', label: 'EN' },
 ]
 
 export function SiteHeader() {
