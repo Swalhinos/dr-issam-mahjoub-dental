@@ -81,7 +81,7 @@ export function Hero() {
           <div className="overflow-hidden rounded-3xl shadow-xl shadow-primary/20">
             <Image
               src="/images/clinic-hero.jpg"
-              alt="Modern dental clinic interior of Centre Dentaire Al Qods"
+              alt="Modern dental clinic interior of Dr Issam Mahjoub"
               width={720}
               height={560}
               priority
@@ -90,7 +90,7 @@ export function Hero() {
           </div>
           <div className="absolute -bottom-5 left-4 flex items-center gap-3 rounded-2xl border border-border bg-background px-5 py-3 shadow-lg md:left-8">
             <Image
-              src="/images/logo.png"
+              src="/images/logo-color.png"
               alt=""
               width={36}
               height={36}

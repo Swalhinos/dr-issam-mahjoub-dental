@@ -13,7 +13,7 @@ export function About() {
         <div className="overflow-hidden rounded-3xl">
           <Image
             src="/images/doctor.jpg"
-            alt="Portrait of Dr. Omari Abdelhakim, dental surgeon in Béni Mellal"
+            alt="Portrait of Dr Issam Mahjoub, dental surgeon in Msaken, Sousse"
             width={640}
             height={720}
             className="h-full w-full object-cover"

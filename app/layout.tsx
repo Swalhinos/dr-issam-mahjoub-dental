@@ -20,27 +20,20 @@ const plexArabic = IBM_Plex_Sans_Arabic({
 })
 
 export const metadata: Metadata = {
-  title: 'Centre Dentaire Al Qods | Dentist in Béni Mellal, Morocco',
+  title: 'Dr Issam Mahjoub | Chirurgien-Dentiste à Msaken, Sousse — Tunisie',
   description:
-    'Premium dental clinic in Béni Mellal led by Dr. Omari Abdelhakim, dental surgeon. Teeth whitening, implants, orthodontics, pediatric dentistry and more. Book your appointment today.',
-  keywords: [
-    'dentist Béni Mellal',
-    'dental clinic Béni Mellal',
-    'Dr Omari Abdelhakim',
-    'cabinet dentaire Béni Mellal',
-    'teeth whitening Béni Mellal',
-    'dental implants Morocco',
-  ],
+    'Cabinet dentaire du Dr Issam Mahjoub à Msaken, Sousse — Tunisie. Implants dentaires, orthodontie, blanchiment, prothèses et urgences. Prenez rendez-vous sur WhatsApp.',
+  keywords: ['dentiste Msaken', 'dentiste Sousse', 'Dr Issam Mahjoub', 'cabinet dentaire Msaken', 'implant dentaire Tunisie', 'blanchiment dentaire Sousse', 'dental implants Tunisia'],
   icons: {
-    icon: '/images/logo.png',
+    icon: '/favicon.png',
     apple: '/apple-icon.png',
   },
   openGraph: {
-    title: 'Centre Dentaire Al Qods | Dentist in Béni Mellal',
+    title: 'Dr Issam Mahjoub | Dentist in Msaken, Sousse',
     description:
-      'Premium dental care in the heart of Béni Mellal. Book your appointment with Dr. Omari Abdelhakim today.',
+      'Premium dental care in the heart of Msaken, Sousse. Book your appointment with Dr Issam Mahjoub today.',
     type: 'website',
-    locale: 'en_US',
+    locale: 'fr_FR',
   },
 }
 

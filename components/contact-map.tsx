@@ -76,7 +76,7 @@ export function ContactMap() {
           <div className="overflow-hidden rounded-3xl border border-border">
             <iframe
               src={CLINIC.mapsEmbed}
-              title="Google Maps — Centre Dentaire Al Qods, Béni Mellal"
+              title="Google Maps — Dr Issam Mahjoub, Msaken, Sousse"
               className="h-full min-h-80 w-full"
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"

@@ -5,12 +5,11 @@ import Image from 'next/image'
 import { Menu, Phone, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/language-context'
+import { SocialIcons } from '@/components/social-icons'
 import { CLINIC, type Lang } from '@/lib/translations'
 
 const langs: { code: Lang; label: string }[] = [
-  { code: 'en', label: 'EN' },
-  { code: 'es', label: 'ES' },
-  { code: 'de', label: 'DE' },
+  { code: 'fr', label: 'FR' },
   { code: 'ar', label: 'عربي' },
 ]
 
@@ -21,6 +20,8 @@ export function SiteHeader() {
   const links = [
     { href: '#about', label: t.nav.about },
     { href: '#services', label: t.nav.services },
+    { href: '#implants', label: t.nav.implants },
+    { href: '#social', label: t.nav.social },
     { href: '#why-us', label: t.nav.whyUs },
     { href: '#results', label: t.nav.results },
     { href: '#faq', label: t.nav.faq },
@@ -32,7 +33,7 @@ export function SiteHeader() {
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 lg:px-6">
         <a href="#top" className="flex items-center gap-2">
           <Image
-            src="/images/logo.png"
+            src="/images/logo-color.png"
             alt=""
             width={40}
             height={40}
@@ -61,6 +62,7 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-2">
+          <SocialIcons className="hidden lg:flex" />
           <div
             className="flex items-center rounded-full border border-border bg-secondary p-0.5"
             role="group"

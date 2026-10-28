@@ -3,6 +3,7 @@
 import Image from 'next/image'
 import { useLanguage } from '@/lib/language-context'
 import { CLINIC } from '@/lib/translations'
+import { SocialIcons } from '@/components/social-icons'
 
 export function SiteFooter() {
   const { t } = useLanguage()
@@ -10,7 +11,9 @@ export function SiteFooter() {
   const links = [
     { href: '#about', label: t.nav.about },
     { href: '#services', label: t.nav.services },
+  { href: '#implants', label: t.nav.implants },
     { href: '#results', label: t.nav.results },
+  { href: '#social', label: t.nav.social },
     { href: '#faq', label: t.nav.faq },
     { href: '#appointment', label: t.nav.book },
   ]
@@ -21,11 +24,11 @@ export function SiteFooter() {
         <div className="flex flex-col gap-4">
           <div className="flex items-center gap-3">
             <Image
-              src="/images/logo.png"
+              src="/images/logo-white.png"
               alt=""
               width={44}
               height={44}
-              className="h-11 w-11 rounded-full bg-navy-foreground/90 object-contain p-1"
+              className="h-11 w-11 object-contain"
             />
             <div className="leading-tight">
               <p className="font-serif font-semibold text-navy-foreground">{CLINIC.name}</p>
@@ -33,6 +36,7 @@ export function SiteFooter() {
             </div>
           </div>
           <p className="text-sm leading-relaxed text-navy-foreground/70">{t.footer.tagline}</p>
+          <SocialIcons tone="dark" />
         </div>
 
         <nav aria-label="Footer" className="flex flex-col gap-3">

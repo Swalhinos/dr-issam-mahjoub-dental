@@ -1,18 +1,16 @@
 'use client'
 
 import {
-  Baby,
+  Anchor,
   Braces,
   Gem,
-  Anchor,
   Slice,
   Sparkles,
   Stethoscope,
-  Syringe,
 } from 'lucide-react'
 import { useLanguage } from '@/lib/language-context'
 
-const icons = [Stethoscope, Sparkles, Anchor, Braces, Gem, Baby, Syringe, Slice]
+const icons = [Anchor, Braces, Sparkles, Gem, Stethoscope, Slice]
 
 export function Services() {
   const { t } = useLanguage()
