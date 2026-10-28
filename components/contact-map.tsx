@@ -1,7 +1,6 @@
 'use client'
 
-import { Clock, MapPin, Navigation, Phone } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Clock, MapPin, Phone } from 'lucide-react'
 import { useLanguage } from '@/lib/language-context'
 import { CLINIC } from '@/lib/translations'
 
@@ -63,14 +62,15 @@ export function ContactMap() {
               </div>
             </div>
 
-            <Button
-              size="lg"
-              className="mt-2 w-fit bg-navy text-navy-foreground hover:bg-navy/90"
-              render={<a href={CLINIC.mapsUrl} target="_blank" rel="noopener noreferrer" />}
+            <a
+              href={CLINIC.mapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 inline-flex w-fit items-center gap-2 rounded-full bg-navy px-6 py-3 text-sm font-semibold text-navy-foreground shadow-md transition-colors hover:bg-navy/90"
             >
-              <Navigation className="size-4" />
+              <MapPin className="size-4" aria-hidden="true" />
               {t.contact.directions}
-            </Button>
+            </a>
           </div>
 
           <div className="overflow-hidden rounded-3xl border border-border">
