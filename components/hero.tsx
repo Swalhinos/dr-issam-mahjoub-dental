@@ -55,8 +55,8 @@ export function Hero() {
             </Button>
             <Button
               size="lg"
-              variant="ghost"
-              className="text-navy hover:bg-background/70"
+              variant="outline"
+              className="border-navy/30 bg-background text-navy hover:bg-secondary"
               render={<a href={CLINIC.mapsUrl} target="_blank" rel="noopener noreferrer" />}
             >
               <MapPin className="size-4" />
