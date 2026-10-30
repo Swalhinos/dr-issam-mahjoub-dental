@@ -8,7 +8,9 @@ import { WhatsAppIcon } from '@/components/whatsapp-icon'
 import { FacebookIcon, InstagramIcon } from '@/components/brand-icons'
 
 type CardKind = 'whatsapp' | 'booking' | 'maps' | 'phone' | 'facebook' | 'instagram'
-type ChatMessage = { role: 'user' | 'assistant'; text: string; local?: boolean; cards?: CardKind[] }
+type ChatMessage = { role: 'user' | 'assistant'; text: string; local?: boolean; cards?: CardKind[]; answerLang?: Lang }
+
+const HINTS: Record<Lang, string> = { fr: 'En un clic', ar: 'بنقرة واحدة', en: 'In one tap' }
 
 const CARD_DEFS: Record<
   CardKind,
@@ -157,7 +159,8 @@ export function ChatWidget() {
       const data = await res.json().catch(() => null)
       const reply = data && typeof data.reply === 'string' && data.reply.trim() ? data.reply : s.error
       const cards = Array.isArray(data?.cards) ? (data.cards as CardKind[]).filter((c) => c in CARD_DEFS) : []
-      setMessages([...next, { role: 'assistant', text: reply, cards }])
+      const answerLang = (['fr', 'ar', 'en'].includes(data?.answerLang) ? data.answerLang : lang) as Lang
+      setMessages([...next, { role: 'assistant', text: reply, cards, answerLang }])
     } catch {
       setMessages([...next, { role: 'assistant', text: s.error }])
     } finally {
@@ -205,11 +208,12 @@ export function ChatWidget() {
                   <div className="mt-2 flex w-[85%] flex-col gap-2">
                     <div className="flex items-center gap-1 text-[11px] font-bold text-[#128C4B]">
                       <ArrowDown className="size-3.5 animate-bounce" />
-                      {s.tapHint}
+                      {HINTS[m.answerLang ?? lang]}
                     </div>
                     {m.cards.map((kind) => {
                       const def = CARD_DEFS[kind]
                       const Icon = def.Icon
+                      const cardLang = m.answerLang ?? lang
                       return (
                         <a
                           key={kind}
@@ -219,9 +223,9 @@ export function ChatWidget() {
                         >
                           <Icon className="size-6 shrink-0" />
                           <span className="min-w-0 flex-1">
-                            <span className="block text-sm font-bold">{def.label[lang]}</span>
+                            <span className="block text-sm font-bold">{def.label[cardLang]}</span>
                             <span className="block text-xs opacity-90" dir="ltr">
-                              {def.sub[lang]}
+                              {def.sub[cardLang]}
                             </span>
                           </span>
                           <ChevronRight className="size-5 shrink-0 rtl:-scale-x-100" />
