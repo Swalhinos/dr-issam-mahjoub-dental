@@ -1,0 +1,184 @@
+'use client'
+
+import { useEffect, useRef, useState } from 'react'
+import { MessageCircle, Send, X } from 'lucide-react'
+import { useLanguage } from '@/lib/language-context'
+import { CLINIC, type Lang } from '@/lib/translations'
+
+type ChatMessage = { role: 'user' | 'assistant'; text: string }
+
+const STRINGS: Record<
+  Lang,
+  { title: string; subtitle: string; greeting: string; placeholder: string; send: string; open: string; whatsappCta: string; error: string }
+> = {
+  fr: {
+    title: 'Assistant du cabinet',
+    subtitle: 'Réponses immédiates, 24h/24',
+    greeting:
+      'Bonjour et bienvenue au cabinet du Dr Issam Mahjoub ! Je peux vous renseigner sur nos services, les implants, ou la prise de rendez-vous. Comment puis-je vous aider ?',
+    placeholder: 'Écrivez votre question…',
+    send: 'Envoyer',
+    open: 'Discuter avec notre assistant',
+    whatsappCta: 'Ou réservez directement sur WhatsApp',
+    error:
+      "Je n'ai pas pu répondre pour le moment. Contactez le cabinet sur WhatsApp au +216 98 800 749, nous vous répondrons rapidement.",
+  },
+  ar: {
+    title: 'مساعد العيادة',
+    subtitle: 'ردود فورية، على مدار الساعة',
+    greeting:
+      'مرحباً بكم في عيادة الدكتور عصام محجوب! يمكنني إخباركم بخدماتنا، زراعة الأسنان، أو كيفية حجز موعد. كيف يمكنني مساعدتكم؟',
+    placeholder: 'اكتب سؤالك…',
+    send: 'إرسال',
+    open: 'تحدث مع مساعدنا',
+    whatsappCta: 'أو احجز مباشرة عبر واتساب',
+    error:
+      'لم أتمكن من الرد في الوقت الحالي. تواصل مع العيادة عبر واتساب على ‎+216 98 800 749‎ وسنرد عليك بسرعة.',
+  },
+  en: {
+    title: 'Clinic assistant',
+    subtitle: 'Instant answers, 24/7',
+    greeting:
+      "Hello and welcome to Dr Issam Mahjoub's clinic! I can tell you about our services, dental implants, or how to book an appointment. How can I help you?",
+    placeholder: 'Type your question…',
+    send: 'Send',
+    open: 'Chat with our assistant',
+    whatsappCta: 'Or book directly on WhatsApp',
+    error:
+      'I could not answer just now. Contact the clinic on WhatsApp at +216 98 800 749 and we will reply quickly.',
+  },
+}
+
+export function ChatWidget() {
+  const { lang } = useLanguage()
+  const s = STRINGS[lang] ?? STRINGS.fr
+  const [open, setOpen] = useState(false)
+  const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [input, setInput] = useState('')
+  const [sending, setSending] = useState(false)
+  const scrollRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (open && messages.length === 0) {
+      setMessages([{ role: 'assistant', text: s.greeting }])
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open ])
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
+  }, [messages, sending, open])
+
+  async function send() {
+    const text = input.trim()
+    if (!text || sending) return
+    const next: ChatMessage[] = [...messages, { role: 'user', text }]
+    setMessages(next)
+    setInput('')
+    setSending(true)
+    try {
+      const res = await fetch('/.netlify/functions/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: next, lang }),
+      })
+      const data = await res.json().catch(() => null)
+      const reply = data && typeof data.reply === 'string' && data.reply.trim() ? data.reply : s.error
+      setMessages([...next, { role: 'assistant', text: reply }])
+    } catch {
+      setMessages([...next, { role: 'assistant', text: s.error }])
+    } finally {
+      setSending(false)
+    }
+  }
+
+  return (
+    <>
+      {open && (
+        <div className="fixed bottom-24 right-5 z-50 flex h-[min(70vh,540px)] w-[min(92vw,380px)] flex-col overflow-hidden rounded-3xl border border-border bg-background shadow-2xl shadow-black/25">
+          <div className="flex items-center gap-3 bg-navy px-4 py-3 text-navy-foreground">
+            <span className="flex size-9 items-center justify-center rounded-full bg-primary/90 text-primary-foreground">
+              <MessageCircle className="size-5" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-semibold">{s.title}</span>
+              <span className="block text-xs opacity-80">{s.subtitle}</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              aria-label="Close"
+              className="rounded-full p-1.5 transition-colors hover:bg-white/10"
+            >
+              <X className="size-5" />
+            </button>
+          </div>
+
+          <div ref={scrollRef} className="flex flex-1 flex-col gap-2.5 overflow-y-auto bg-secondary/40 px-3.5 py-4">
+            {messages.map((m, i) => (
+              <div
+                key={i}
+                className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed shadow-sm ${
+                  m.role === 'user'
+                    ? 'self-end bg-navy text-navy-foreground'
+                    : 'self-start border border-border/60 bg-background text-foreground'
+                }`}
+              >
+                {m.text}
+              </div>
+            ))}
+            {sending && (
+              <div className="self-start rounded-2xl border border-border/60 bg-background px-3.5 py-2.5 text-sm text-muted-foreground shadow-sm">
+                <span className="animate-pulse">•••</span>
+              </div>
+            )}
+          </div>
+
+          <div className="border-t border-border bg-background px-3.5 py-3">
+            <form
+              className="flex items-center gap-2"
+              onSubmit={(e) => {
+                e.preventDefault()
+                void send()
+              }}
+            >
+              <input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder={s.placeholder}
+                maxLength={1000}
+                className="min-w-0 flex-1 rounded-full border border-border bg-secondary/50 px-4 py-2.5 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-primary"
+              />
+              <button
+                type="submit"
+                disabled={sending || !input.trim()}
+                aria-label={s.send}
+                className="flex size-10 shrink-0 items-center justify-center rounded-full bg-navy text-navy-foreground transition-transform hover:scale-105 disabled:opacity-40"
+              >
+                <Send className="size-4 rtl:-scale-x-100" />
+              </button>
+            </form>
+            <a
+              href={CLINIC.whatsapp}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2.5 block text-center text-xs font-medium text-navy underline-offset-2 hover:underline"
+            >
+              {s.whatsappCta} — {CLINIC.phoneDisplay}
+            </a>
+          </div>
+        </div>
+      )}
+
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-label={s.open}
+        className="fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-full bg-navy px-4 py-3.5 text-navy-foreground shadow-xl shadow-black/20 transition-transform hover:scale-105"
+      >
+        {open ? <X className="size-6" /> : <MessageCircle className="size-6" />}
+        <span className="hidden text-sm font-semibold sm:inline">{s.title}</span>
+      </button>
+    </>
+  )
+}
