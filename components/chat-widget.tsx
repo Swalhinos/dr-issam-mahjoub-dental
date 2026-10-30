@@ -80,7 +80,7 @@ export function ChatWidget() {
     setInput('')
     setSending(true)
     try {
-      const res = await fetch('/.netlify/functions/chat', {
+      const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         // The static greeting stays local so it never anchors the model's language.
