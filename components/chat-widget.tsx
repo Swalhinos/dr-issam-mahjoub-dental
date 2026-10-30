@@ -1,15 +1,15 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { MessageCircle, Send, X } from 'lucide-react'
+import { Send, Sparkles, X } from 'lucide-react'
 import { useLanguage } from '@/lib/language-context'
 import { CLINIC, type Lang } from '@/lib/translations'
 
-type ChatMessage = { role: 'user' | 'assistant'; text: string }
+type ChatMessage = { role: 'user' | 'assistant'; text: string; local?: boolean }
 
 const STRINGS: Record<
   Lang,
-  { title: string; subtitle: string; greeting: string; placeholder: string; send: string; open: string; whatsappCta: string; error: string }
+  { title: string; subtitle: string; greeting: string; placeholder: string; send: string; open: string; whatsappCta: string; error: string; typing: string }
 > = {
   fr: {
     title: 'Assistant du cabinet',
@@ -22,6 +22,7 @@ const STRINGS: Record<
     whatsappCta: 'Ou réservez directement sur WhatsApp',
     error:
       "Je n'ai pas pu répondre pour le moment. Contactez le cabinet sur WhatsApp au +216 98 800 749, nous vous répondrons rapidement.",
+    typing: "L'assistant écrit",
   },
   ar: {
     title: 'مساعد العيادة',
@@ -34,6 +35,7 @@ const STRINGS: Record<
     whatsappCta: 'أو احجز مباشرة عبر واتساب',
     error:
       'لم أتمكن من الرد في الوقت الحالي. تواصل مع العيادة عبر واتساب على ‎+216 98 800 749‎ وسنرد عليك بسرعة.',
+    typing: 'المساعد يكتب الآن',
   },
   en: {
     title: 'Clinic assistant',
@@ -46,6 +48,7 @@ const STRINGS: Record<
     whatsappCta: 'Or book directly on WhatsApp',
     error:
       'I could not answer just now. Contact the clinic on WhatsApp at +216 98 800 749 and we will reply quickly.',
+    typing: 'Assistant is typing',
   },
 }
 
@@ -60,7 +63,7 @@ export function ChatWidget() {
 
   useEffect(() => {
     if (open && messages.length === 0) {
-      setMessages([{ role: 'assistant', text: s.greeting }])
+      setMessages([{ role: 'assistant', text: s.greeting, local: true }])
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open ])
@@ -80,7 +83,8 @@ export function ChatWidget() {
       const res = await fetch('/.netlify/functions/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: next, lang }),
+        // The static greeting stays local so it never anchors the model's language.
+        body: JSON.stringify({ messages: next.filter((m) => !m.local), lang }),
       })
       const data = await res.json().catch(() => null)
       const reply = data && typeof data.reply === 'string' && data.reply.trim() ? data.reply : s.error
@@ -96,9 +100,9 @@ export function ChatWidget() {
     <>
       {open && (
         <div className="fixed bottom-24 right-5 z-50 flex h-[min(70vh,540px)] w-[min(92vw,380px)] flex-col overflow-hidden rounded-3xl border border-border bg-background shadow-2xl shadow-black/25">
-          <div className="flex items-center gap-3 bg-navy px-4 py-3 text-navy-foreground">
-            <span className="flex size-9 items-center justify-center rounded-full bg-primary/90 text-primary-foreground">
-              <MessageCircle className="size-5" />
+          <div className="flex items-center gap-3 bg-gradient-to-r from-[#14273D] via-navy to-[#2E6E9E] px-4 py-3 text-navy-foreground">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-white/15 ring-1 ring-white/40 backdrop-blur-sm">
+              <Sparkles className="size-5 text-[#BFE6FB]" />
             </span>
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm font-semibold">{s.title}</span>
@@ -128,8 +132,17 @@ export function ChatWidget() {
               </div>
             ))}
             {sending && (
-              <div className="self-start rounded-2xl border border-border/60 bg-background px-3.5 py-2.5 text-sm text-muted-foreground shadow-sm">
-                <span className="animate-pulse">•••</span>
+              <div className="flex items-center gap-2 self-start rounded-2xl border border-border/60 bg-background px-3.5 py-2.5 shadow-sm">
+                <span className="flex items-end gap-1" aria-hidden="true">
+                  {[0, 1, 2].map((d) => (
+                    <span
+                      key={d}
+                      className="size-1.5 animate-bounce rounded-full bg-navy/70"
+                      style={{ animationDelay: `${d * 160}ms`, animationDuration: '0.9s' }}
+                    />
+                  ))}
+                </span>
+                <span className="text-xs text-muted-foreground">{s.typing}…</span>
               </div>
             )}
           </div>
@@ -174,9 +187,9 @@ export function ChatWidget() {
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-label={s.open}
-        className="fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-full bg-navy px-4 py-3.5 text-navy-foreground shadow-xl shadow-black/20 transition-transform hover:scale-105"
+        className="fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-full bg-gradient-to-br from-[#14273D] via-navy to-[#2E6E9E] px-4 py-3.5 text-navy-foreground shadow-xl shadow-navy/30 ring-1 ring-white/25 transition-transform hover:scale-105"
       >
-        {open ? <X className="size-6" /> : <MessageCircle className="size-6" />}
+        {open ? <X className="size-6" /> : <Sparkles className="size-6 text-[#BFE6FB]" />}
         <span className="hidden text-sm font-semibold sm:inline">{s.title}</span>
       </button>
     </>
