@@ -86,7 +86,7 @@ const FAQ = [
   {
     id: 'location',
     cards: ['maps'],
-    match: /(أين|فين|العنوان|الموقع الجغرافي|كيفاش نوصل|adresse|où se trouve|où êtes-vous|comment venir|address|where|location|directions|how to get)/i,
+    match: /(أين|فين|العنوان|الموقع|تقع|يقع|كاين|كاينة|البلاصة|بلاصة|لوكيشن|كيفاش نوصل|نوصل|adresse|localisation|emplacement|où se trouve|où êtes-vous|où|comment venir|address|where|location|directions|how to get|position|gps)/i,
     answers: {
       fr: 'Le cabinet du Dr Issam Mahjoub se trouve à Msaken, dans la région de Sousse, en Tunisie. Vous trouverez sur ce site une carte et un bouton « Itinéraire » pour vous guider facilement jusqu\'à nous.',
       ar: 'توجد عيادة الدكتور عصام محجوب في مساكن، بجهة سوسة، تونس. ستجدون في هذا الموقع خريطة وزر «Itinéraire» ليدلكم على الطريق بسهولة.',
@@ -287,7 +287,12 @@ export const handler = async (event) => {
   const models = [...new Set(['gemini-3.5-flash-lite', process.env.GEMINI_MODEL, 'gemini-2.5-flash'].filter(Boolean))]
   for (let i = 0; i < models.length; i++) {
     const reply = await askGemini(apiKey, models[i], systemPrompt, messages, i === 0)
-    if (reply) return json(200, { reply, source: 'ai', cards: /whatsapp|واتساب|98 800 749/i.test(reply) ? ['whatsapp'] : [], answerLang: ARABIC_SCRIPT.test(reply) ? 'ar' : lang })
+    if (reply) {
+      const aiCards = []
+      if (/whatsapp|واتساب|98 800 749/i.test(reply)) aiCards.push('whatsapp')
+      if (/(موقع|تقع|كاين|بلاصة|عنوان|لوكيشن|location|adresse|où|maps|itinéraire|الاتجاهات)/i.test(lastUser.text)) aiCards.push('maps')
+      return json(200, { reply, source: 'ai', cards: aiCards, answerLang: ARABIC_SCRIPT.test(reply) ? 'ar' : lang })
+    }
   }
   return json(200, { reply: fallback, cards: ['whatsapp'] })
 }
