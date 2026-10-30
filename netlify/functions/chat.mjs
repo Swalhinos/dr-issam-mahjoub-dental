@@ -156,7 +156,7 @@ const FAQ = [
 function faqAnswer(text, siteLang) {
   const lang = ARABIC_SCRIPT.test(text) ? 'ar' : siteLang
   for (const item of FAQ) {
-    if (item.match.test(text)) return { text: item.answers[lang] || item.answers.fr, cards: item.cards || [] }
+    if (item.match.test(text)) return { text: item.answers[lang] || item.answers.fr, cards: item.cards || [], answerLang: lang }
   }
   return null
 }
@@ -258,7 +258,7 @@ export const handler = async (event) => {
   // Layer 1: instant FAQ — no upstream call, answers in milliseconds.
   const instant = faqAnswer(lastUser.text, lang)
   if (instant) {
-    return json(200, { reply: instant.text, source: 'faq', cards: instant.cards })
+    return json(200, { reply: instant.text, source: 'faq', cards: instant.cards, answerLang: instant.answerLang })
   }
 
   // Layer 2: Gemini for everything else.
@@ -287,7 +287,7 @@ export const handler = async (event) => {
   const models = [...new Set(['gemini-3.5-flash-lite', process.env.GEMINI_MODEL, 'gemini-2.5-flash'].filter(Boolean))]
   for (let i = 0; i < models.length; i++) {
     const reply = await askGemini(apiKey, models[i], systemPrompt, messages, i === 0)
-    if (reply) return json(200, { reply, source: 'ai', cards: /whatsapp|واتساب|98 800 749/i.test(reply) ? ['whatsapp'] : [] })
+    if (reply) return json(200, { reply, source: 'ai', cards: /whatsapp|واتساب|98 800 749/i.test(reply) ? ['whatsapp'] : [], answerLang: ARABIC_SCRIPT.test(reply) ? 'ar' : lang })
   }
   return json(200, { reply: fallback, cards: ['whatsapp'] })
 }
