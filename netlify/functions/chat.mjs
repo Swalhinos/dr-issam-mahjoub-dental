@@ -39,10 +39,21 @@ function json(statusCode, obj) {
   }
 }
 
-async function askGemini(apiKey, model, systemPrompt, contents, timeoutMs) {
+// Thinking controls differ per model family: Gemini 3.x uses thinkingLevel,
+// Gemini 2.5 uses thinkingBudget. Without them the models can spend tens of
+// seconds "thinking" before answering — fatal for a chat widget.
+function thinkingConfigFor(model) {
+  if (model.startsWith('gemini-3')) return { thinkingLevel: 'minimal' }
+  if (model.startsWith('gemini-2.5')) return { thinkingBudget: 0 }
+  return null
+}
+
+async function askGeminiOnce(apiKey, model, systemPrompt, contents, thinkingConfig, timeoutMs) {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeoutMs)
   try {
+    const generationConfig = { temperature: 0.4, maxOutputTokens: 320 }
+    if (thinkingConfig) generationConfig.thinkingConfig = thinkingConfig
     const res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
       {
@@ -55,26 +66,37 @@ async function askGemini(apiKey, model, systemPrompt, contents, timeoutMs) {
         body: JSON.stringify({
           system_instruction: { parts: [{ text: systemPrompt }] },
           contents,
-          // thinkingBudget 0: these models otherwise "think" for tens of
-          // seconds before answering — fatal for a chat widget.
-          generationConfig: { temperature: 0.4, maxOutputTokens: 320, thinkingConfig: { thinkingBudget: 0 } },
+          generationConfig,
         }),
       },
     )
     if (!res.ok) {
       console.error('Gemini upstream error', model, res.status)
-      return null
+      return { status: res.status, reply: null }
     }
     const data = await res.json()
     const parts = data?.candidates?.[0]?.content?.parts || []
     const reply = parts.map((p) => p.text || '').join('').trim()
-    return reply || null
+    return { status: 200, reply: reply || null }
   } catch (err) {
     console.error('Gemini attempt failed', model, err?.name || err)
-    return null
+    return { status: 0, reply: null }
   } finally {
     clearTimeout(timer)
   }
+}
+
+async function askGemini(apiKey, model, systemPrompt, contents, allowThinkingRetry) {
+  const thinking = thinkingConfigFor(model)
+  const first = await askGeminiOnce(apiKey, model, systemPrompt, contents, thinking, 20000)
+  if (first.reply) return first.reply
+  // A 400 with a thinking config usually means the parameter is not accepted
+  // for this model — retry once without it before giving up on the model.
+  if (allowThinkingRetry && thinking && first.status === 400) {
+    const second = await askGeminiOnce(apiKey, model, systemPrompt, contents, null, 20000)
+    return second.reply
+  }
+  return null
 }
 
 export const handler = async (event) => {
@@ -118,12 +140,11 @@ export const handler = async (event) => {
     systemPrompt += `\n\nLANGUAGE OVERRIDE: The visitor's last message is written in Arabic. You MUST reply entirely in ${LANGUAGE_NAMES.ar}, whatever language was used earlier in the conversation.`
   }
 
-  // Model chain: fastest lite model first, then the configured model, then
-  // the earlier lite fallback — a single model outage or slowdown never
-  // takes the assistant down.
-  const models = [...new Set(['gemini-2.5-flash-lite', process.env.GEMINI_MODEL, 'gemini-2.5-flash', 'gemini-3.5-flash-lite'].filter(Boolean))]
-  for (const model of models) {
-    const reply = await askGemini(apiKey, model, systemPrompt, messages, 15000)
+  // Model chain: gemini-3.5-flash-lite is the model verified working on this
+  // API key; the configured model and 2.5-flash follow as backups.
+  const models = [...new Set(['gemini-3.5-flash-lite', process.env.GEMINI_MODEL, 'gemini-2.5-flash'].filter(Boolean))]
+  for (let i = 0; i < models.length; i++) {
+    const reply = await askGemini(apiKey, models[i], systemPrompt, messages, i === 0)
     if (reply) return json(200, { reply })
   }
   return json(200, { reply: fallback })
