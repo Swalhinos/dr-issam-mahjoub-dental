@@ -84,7 +84,12 @@ export function ChatWidget() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         // The static greeting stays local so it never anchors the model's language.
-        body: JSON.stringify({ messages: next.filter((m) => !m.local), lang }),
+        // If the visitor typed Arabic script, ask for Arabic so even a fallback
+        // reply comes back in the visitor's language.
+        body: JSON.stringify({
+          messages: next.filter((m) => !m.local),
+          lang: /[\u0600-\u06FF]/.test(text) ? 'ar' : lang,
+        }),
       })
       const data = await res.json().catch(() => null)
       const reply = data && typeof data.reply === 'string' && data.reply.trim() ? data.reply : s.error
