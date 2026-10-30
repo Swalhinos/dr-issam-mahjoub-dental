@@ -1,15 +1,16 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Send, Sparkles, X } from 'lucide-react'
+import { ArrowDown, ChevronRight, Send, X } from 'lucide-react'
 import { useLanguage } from '@/lib/language-context'
 import { CLINIC, type Lang } from '@/lib/translations'
+import { WhatsAppIcon } from '@/components/whatsapp-icon'
 
-type ChatMessage = { role: 'user' | 'assistant'; text: string; local?: boolean }
+type ChatMessage = { role: 'user' | 'assistant'; text: string; local?: boolean; whatsapp?: boolean }
 
 const STRINGS: Record<
   Lang,
-  { title: string; subtitle: string; greeting: string; placeholder: string; send: string; open: string; whatsappCta: string; error: string; typing: string }
+  { title: string; subtitle: string; greeting: string; placeholder: string; send: string; open: string; whatsappCta: string; error: string; typing: string; tapHint: string; bookWhatsapp: string }
 > = {
   fr: {
     title: 'Assistant du cabinet',
@@ -23,6 +24,8 @@ const STRINGS: Record<
     error:
       "Je n'ai pas pu répondre pour le moment. Contactez le cabinet sur WhatsApp au +216 98 800 749, nous vous répondrons rapidement.",
     typing: "L'assistant écrit",
+    tapHint: 'Réservez en un clic',
+    bookWhatsapp: 'Réserver sur WhatsApp',
   },
   ar: {
     title: 'مساعد العيادة',
@@ -36,6 +39,8 @@ const STRINGS: Record<
     error:
       'لم أتمكن من الرد في الوقت الحالي. تواصل مع العيادة عبر واتساب على ‎+216 98 800 749‎ وسنرد عليك بسرعة.',
     typing: 'المساعد يكتب الآن',
+    tapHint: 'احجز بنقرة واحدة',
+    bookWhatsapp: 'احجز عبر واتساب',
   },
   en: {
     title: 'Clinic assistant',
@@ -49,6 +54,8 @@ const STRINGS: Record<
     error:
       'I could not answer just now. Contact the clinic on WhatsApp at +216 98 800 749 and we will reply quickly.',
     typing: 'Assistant is typing',
+    tapHint: 'Book in one tap',
+    bookWhatsapp: 'Book on WhatsApp',
   },
 }
 
@@ -93,7 +100,7 @@ export function ChatWidget() {
       })
       const data = await res.json().catch(() => null)
       const reply = data && typeof data.reply === 'string' && data.reply.trim() ? data.reply : s.error
-      setMessages([...next, { role: 'assistant', text: reply }])
+      setMessages([...next, { role: 'assistant', text: reply, whatsapp: data?.whatsapp === true }])
     } catch {
       setMessages([...next, { role: 'assistant', text: s.error }])
     } finally {
@@ -106,9 +113,11 @@ export function ChatWidget() {
       {open && (
         <div className="fixed bottom-24 right-5 z-50 flex h-[min(70vh,540px)] w-[min(92vw,380px)] flex-col overflow-hidden rounded-3xl border border-border bg-background shadow-2xl shadow-black/25">
           <div className="flex items-center gap-3 bg-gradient-to-r from-[#14273D] via-navy to-[#2E6E9E] px-4 py-3 text-navy-foreground">
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-white/15 ring-1 ring-white/40 backdrop-blur-sm">
-              <Sparkles className="size-5 text-[#BFE6FB]" />
-            </span>
+            <img
+              src="/images/chat-icon.png"
+              alt=""
+              className="size-9 shrink-0 rounded-[28%] bg-white object-cover ring-1 ring-white/40"
+            />
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm font-semibold">{s.title}</span>
               <span className="block text-xs opacity-80">{s.subtitle}</span>
@@ -125,15 +134,39 @@ export function ChatWidget() {
 
           <div ref={scrollRef} className="flex flex-1 flex-col gap-2.5 overflow-y-auto bg-secondary/40 px-3.5 py-4">
             {messages.map((m, i) => (
-              <div
-                key={i}
-                className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed shadow-sm ${
-                  m.role === 'user'
-                    ? 'self-end bg-navy text-navy-foreground'
-                    : 'self-start border border-border/60 bg-background text-foreground'
-                }`}
-              >
-                {m.text}
+              <div key={i} className={`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'}`}>
+                <div
+                  className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed shadow-sm ${
+                    m.role === 'user'
+                      ? 'bg-navy text-navy-foreground'
+                      : 'border border-border/60 bg-background text-foreground'
+                  }`}
+                >
+                  {m.text}
+                </div>
+                {m.role === 'assistant' && m.whatsapp && (
+                  <div className="mt-2 w-[85%]">
+                    <div className="mb-1 flex items-center gap-1 text-[11px] font-bold text-[#128C4B]">
+                      <ArrowDown className="size-3.5 animate-bounce" />
+                      {s.tapHint}
+                    </div>
+                    <a
+                      href={CLINIC.whatsapp}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 rounded-2xl bg-[#25D366] px-4 py-3 text-white shadow-md shadow-[#25D366]/30 transition-transform hover:scale-[1.02]"
+                    >
+                      <WhatsAppIcon className="size-6 shrink-0" />
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-sm font-bold">{s.bookWhatsapp}</span>
+                        <span className="block text-xs opacity-90" dir="ltr">
+                          {CLINIC.phoneDisplay}
+                        </span>
+                      </span>
+                      <ChevronRight className="size-5 shrink-0 rtl:-scale-x-100" />
+                    </a>
+                  </div>
+                )}
               </div>
             ))}
             {sending && (
@@ -192,10 +225,16 @@ export function ChatWidget() {
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-label={s.open}
-        className="fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-full bg-gradient-to-br from-[#14273D] via-navy to-[#2E6E9E] px-4 py-3.5 text-navy-foreground shadow-xl shadow-navy/30 ring-1 ring-white/25 transition-transform hover:scale-105"
+        className="fixed bottom-5 right-5 z-50 flex items-center gap-2.5 rounded-full bg-white py-2 pl-2 pr-4 shadow-xl shadow-black/20 ring-1 ring-black/10 transition-transform hover:scale-105"
       >
-        {open ? <X className="size-6" /> : <Sparkles className="size-6 text-[#BFE6FB]" />}
-        <span className="hidden text-sm font-semibold sm:inline">{s.title}</span>
+        {open ? (
+          <span className="flex size-10 items-center justify-center rounded-full bg-navy text-navy-foreground">
+            <X className="size-5" />
+          </span>
+        ) : (
+          <img src="/images/chat-icon.png" alt="" className="size-10 rounded-[28%] object-cover" />
+        )}
+        <span className="hidden text-sm font-semibold text-navy sm:inline">{s.title}</span>
       </button>
     </>
   )
