@@ -45,7 +45,7 @@ const ARABIC_SCRIPT = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]/
 const FAQ = [
   {
     id: 'emergency',
-    whatsapp: true,
+    cards: ['phone', 'whatsapp'],
     match: /(ألم|وجع|يوجع|كيضر|طوارئ|ضرني|سنّي كتوجع|douleur|mal aux dents|mal de dent|urgence|dental pain|toothache|emergency|hurts|in pain)/i,
     answers: {
       fr: "Je suis navré pour votre douleur. Je ne peux pas poser de diagnostic ni recommander de médicament : pour une douleur ou une urgence, contactez le cabinet au plus vite sur WhatsApp au +216 98 800 749 ou par téléphone, l'équipe vous prendra en charge rapidement.",
@@ -55,7 +55,7 @@ const FAQ = [
   },
   {
     id: 'price',
-    whatsapp: true,
+    cards: ['whatsapp'],
     match: /(ثمن|سعر|أسعار|بشحال|بكم|كم تكلفة|تكلفة|prix|tarif|coût|combien|price|cost|how much|fees)/i,
     answers: {
       fr: "Les tarifs dépendent de votre plan de traitement personnalisé, établi après un examen au cabinet avec le Dr Issam Mahjoub. Pour un devis précis, contactez-nous sur WhatsApp au +216 98 800 749, nous vous répondrons rapidement.",
@@ -65,7 +65,7 @@ const FAQ = [
   },
   {
     id: 'hours',
-    whatsapp: true,
+    cards: ['booking'],
     match: /(ساعات العمل|أوقات|وقتاش تفتحو|وقتاش تسكرو|متى تفتح|متى تغلق|horaire|heures d'ouverture|ouvert|quand ouvrez|opening hours|when.*open|what time)/i,
     answers: {
       fr: 'Le cabinet est ouvert du lundi au vendredi de 09:00 à 18:00 et le samedi de 09:00 à 14:00. Pour réserver, écrivez-nous sur WhatsApp au +216 98 800 749.',
@@ -75,7 +75,7 @@ const FAQ = [
   },
   {
     id: 'booking',
-    whatsapp: true,
+    cards: ['booking', 'whatsapp'],
     match: /(حجز|احجز|موعد|نبغي نجي|نحب نجي|rendez-vous|rendez vous|réserv|prendre rendez|book|appointment|booking|rdv)/i,
     answers: {
       fr: 'Vous pouvez réserver de trois façons : le formulaire de rendez-vous sur ce site, par téléphone, ou sur WhatsApp au +216 98 800 749. Le cabinet confirmera votre rendez-vous par téléphone ou WhatsApp.',
@@ -85,6 +85,7 @@ const FAQ = [
   },
   {
     id: 'location',
+    cards: ['maps'],
     match: /(أين|فين|العنوان|الموقع الجغرافي|كيفاش نوصل|adresse|où se trouve|où êtes-vous|comment venir|address|where|location|directions|how to get)/i,
     answers: {
       fr: 'Le cabinet du Dr Issam Mahjoub se trouve à Msaken, dans la région de Sousse, en Tunisie. Vous trouverez sur ce site une carte et un bouton « Itinéraire » pour vous guider facilement jusqu\'à nous.',
@@ -94,7 +95,7 @@ const FAQ = [
   },
   {
     id: 'implants',
-    whatsapp: true,
+    cards: ['whatsapp'],
     match: /(زراعة|غرسة|implant)/i,
     answers: {
       fr: "L'implant dentaire remplace la racine d'une dent manquante par une solution fixe, stable et durable, sans toucher aux dents voisines. Pour savoir si c'est adapté à votre cas, le Dr Mahjoub doit vous examiner : écrivez-nous sur WhatsApp au +216 98 800 749.",
@@ -104,7 +105,7 @@ const FAQ = [
   },
   {
     id: 'whitening',
-    whatsapp: true,
+    cards: ['whatsapp'],
     match: /(تبييض|بياض|blanchiment|whitening|whiter teeth)/i,
     answers: {
       fr: 'Nous proposons un blanchiment dentaire professionnel pour un sourire visiblement plus éclatant dès la première visite. Pour les détails et un rendez-vous, contactez-nous sur WhatsApp au +216 98 800 749.',
@@ -114,7 +115,7 @@ const FAQ = [
   },
   {
     id: 'ortho',
-    whatsapp: true,
+    cards: ['whatsapp'],
     match: /(تقويم|أقواس|orthodont|appareil dentaire|braces|aligner|aligneur|invisalign)/i,
     answers: {
       fr: "Le cabinet propose l'orthodontie pour enfants et adultes : appareils classiques et aligneurs transparents pour aligner vos dents à tout âge. Pour une première évaluation, écrivez-nous sur WhatsApp au +216 98 800 749.",
@@ -132,6 +133,16 @@ const FAQ = [
     },
   },
   {
+    id: 'social',
+    cards: ['facebook', 'instagram'],
+    match: /(فيسبوك|انستغرام|انستا|تيك توك|facebook|instagram|tiktok|r[ée]seaux|social|follow)/i,
+    answers: {
+      fr: 'Suivez le Dr Issam Mahjoub sur Facebook et Instagram : il y partage ses cas, ses conseils et les coulisses du cabinet. Touchez une carte ci-dessous pour ouvrir la page.',
+      ar: 'تابعوا الدكتور عصام محجوب على فيسبوك وإنستغرام: ينشر هناك حالاته ونصائحه وكواليس العيادة. اضغطوا على إحدى البطاقتين أسفله لفتح الصفحة.',
+      en: 'Follow Dr Issam Mahjoub on Facebook and Instagram: he shares his cases, tips and behind-the-scenes of the clinic there. Tap a card below to open the page.',
+    },
+  },
+  {
     id: 'greeting',
     match: /(^\s*(سلام|السلام عليكم|مرحبا|صباح الخير|مساء الخير|أهلا|اهلا)[\s!.,،]*$)|(^\s*(bonjour|bonsoir|salut|hello|hi|hey)\b)/i,
     answers: {
@@ -145,7 +156,7 @@ const FAQ = [
 function faqAnswer(text, siteLang) {
   const lang = ARABIC_SCRIPT.test(text) ? 'ar' : siteLang
   for (const item of FAQ) {
-    if (item.match.test(text)) return { text: item.answers[lang] || item.answers.fr, whatsapp: !!item.whatsapp }
+    if (item.match.test(text)) return { text: item.answers[lang] || item.answers.fr, cards: item.cards || [] }
   }
   return null
 }
@@ -242,7 +253,7 @@ async function computeChat(payload) {
   // Layer 1: instant FAQ — no upstream call, answers in milliseconds.
   const instant = faqAnswer(lastUser.text, lang)
   if (instant) {
-    return { status: 200, body: { reply: instant.text, source: 'faq', whatsapp: instant.whatsapp } }
+    return { status: 200, body: { reply: instant.text, source: 'faq', cards: instant.cards } }
   }
 
   // Layer 2: Gemini for everything else.
@@ -271,7 +282,7 @@ async function computeChat(payload) {
   const models = [...new Set(['gemini-3.5-flash-lite', process.env.GEMINI_MODEL, 'gemini-2.5-flash'].filter(Boolean))]
   for (let i = 0; i < models.length; i++) {
     const reply = await askGemini(apiKey, models[i], systemPrompt, messages, i === 0)
-    if (reply) return { status: 200, body: { reply, source: 'ai', whatsapp: /whatsapp|واتساب|98 800 749/i.test(reply) } }
+    if (reply) return { status: 200, body: { reply, source: 'ai', cards: /whatsapp|واتساب|98 800 749/i.test(reply) ? ['whatsapp'] : [] } }
   }
-  return { status: 200, body: { reply: fallback, whatsapp: true } }
+  return { status: 200, body: { reply: fallback, cards: ['whatsapp'] } }
 }
