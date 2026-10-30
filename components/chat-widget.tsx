@@ -176,7 +176,7 @@ export function ChatWidget() {
             <img
               src="/images/chat-icon.png"
               alt=""
-              className="size-10 shrink-0 object-contain drop-shadow-md"
+              className="size-10 shrink-0 rounded-full object-cover shadow-md"
             />
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm font-semibold">{s.title}</span>
@@ -292,16 +292,15 @@ export function ChatWidget() {
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-label={s.open}
-        className="fixed bottom-5 right-5 z-50 flex items-center gap-2.5 rounded-full bg-gradient-to-br from-[#14273D] via-navy to-[#2E6E9E] py-2 pl-2 pr-4 text-navy-foreground shadow-xl shadow-navy/30 ring-1 ring-white/25 transition-transform hover:scale-105"
+        className="fixed bottom-5 right-5 z-50 rounded-full shadow-xl shadow-navy/40 ring-1 ring-black/10 transition-transform hover:scale-105"
       >
         {open ? (
-          <span className="flex size-10 items-center justify-center rounded-full bg-white/15">
-            <X className="size-5" />
+          <span className="flex size-14 items-center justify-center rounded-full bg-navy text-navy-foreground">
+            <X className="size-6" />
           </span>
         ) : (
-          <img src="/images/chat-icon.png" alt="" className="size-10 object-contain drop-shadow" />
+          <img src="/images/chat-icon.png" alt="" className="block size-14 rounded-full object-cover" />
         )}
-        <span className="hidden text-sm font-semibold sm:inline">{s.title}</span>
       </button>
     </>
   )
