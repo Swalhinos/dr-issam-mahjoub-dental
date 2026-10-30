@@ -1,12 +1,68 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { ArrowDown, ChevronRight, Send, X } from 'lucide-react'
+import { ArrowDown, CalendarCheck, ChevronRight, MapPin, Phone, Send, X } from 'lucide-react'
 import { useLanguage } from '@/lib/language-context'
 import { CLINIC, type Lang } from '@/lib/translations'
 import { WhatsAppIcon } from '@/components/whatsapp-icon'
+import { FacebookIcon, InstagramIcon } from '@/components/brand-icons'
 
-type ChatMessage = { role: 'user' | 'assistant'; text: string; local?: boolean; whatsapp?: boolean }
+type CardKind = 'whatsapp' | 'booking' | 'maps' | 'phone' | 'facebook' | 'instagram'
+type ChatMessage = { role: 'user' | 'assistant'; text: string; local?: boolean; cards?: CardKind[] }
+
+const CARD_DEFS: Record<
+  CardKind,
+  { href: string; external: boolean; bg: string; Icon: (p: { className?: string }) => React.ReactNode; label: Record<Lang, string>; sub: Record<Lang, string> }
+> = {
+  whatsapp: {
+    href: CLINIC.whatsapp,
+    external: true,
+    bg: 'bg-[#25D366] shadow-[#25D366]/30',
+    Icon: WhatsAppIcon,
+    label: { fr: 'Réserver sur WhatsApp', ar: 'احجز عبر واتساب', en: 'Book on WhatsApp' },
+    sub: { fr: CLINIC.phoneDisplay, ar: CLINIC.phoneDisplay, en: CLINIC.phoneDisplay },
+  },
+  booking: {
+    href: '#appointment',
+    external: false,
+    bg: 'bg-gradient-to-r from-[#14273D] to-[#2E6E9E] shadow-navy/30',
+    Icon: CalendarCheck,
+    label: { fr: 'Prendre rendez-vous ici', ar: 'احجز موعدك هنا', en: 'Book your appointment here' },
+    sub: { fr: 'Formulaire du site', ar: 'نموذج الموقع', en: 'Website form' },
+  },
+  maps: {
+    href: CLINIC.mapsUrl,
+    external: true,
+    bg: 'bg-[#1A73E8] shadow-[#1A73E8]/30',
+    Icon: MapPin,
+    label: { fr: 'Itinéraire vers le cabinet', ar: 'الاتجاهات إلى العيادة', en: 'Directions to the clinic' },
+    sub: { fr: 'Google Maps', ar: 'Google Maps', en: 'Google Maps' },
+  },
+  phone: {
+    href: 'tel:+21698800749',
+    external: false,
+    bg: 'bg-rose-600 shadow-rose-600/30',
+    Icon: Phone,
+    label: { fr: 'Appeler le cabinet', ar: 'اتصل بالعيادة الآن', en: 'Call the clinic now' },
+    sub: { fr: CLINIC.phoneDisplay, ar: CLINIC.phoneDisplay, en: CLINIC.phoneDisplay },
+  },
+  facebook: {
+    href: 'https://www.facebook.com/docsam1979',
+    external: true,
+    bg: 'bg-[#1877F2] shadow-[#1877F2]/30',
+    Icon: FacebookIcon,
+    label: { fr: 'Notre page Facebook', ar: 'صفحتنا على فيسبوك', en: 'Our Facebook page' },
+    sub: { fr: 'Dr Issam Mahjoub', ar: 'Dr Issam Mahjoub', en: 'Dr Issam Mahjoub' },
+  },
+  instagram: {
+    href: 'https://www.instagram.com/dr.issam.mahjoub',
+    external: true,
+    bg: 'bg-gradient-to-r from-[#F58529] via-[#DD2A7B] to-[#8134AF] shadow-[#DD2A7B]/30',
+    Icon: InstagramIcon,
+    label: { fr: 'Notre Instagram', ar: 'حسابنا على إنستغرام', en: 'Our Instagram' },
+    sub: { fr: '@dr.issam.mahjoub', ar: '@dr.issam.mahjoub', en: '@dr.issam.mahjoub' },
+  },
+}
 
 const STRINGS: Record<
   Lang,
@@ -24,7 +80,7 @@ const STRINGS: Record<
     error:
       "Je n'ai pas pu répondre pour le moment. Contactez le cabinet sur WhatsApp au +216 98 800 749, nous vous répondrons rapidement.",
     typing: "L'assistant écrit",
-    tapHint: 'Réservez en un clic',
+    tapHint: 'En un clic',
     bookWhatsapp: 'Réserver sur WhatsApp',
   },
   ar: {
@@ -39,7 +95,7 @@ const STRINGS: Record<
     error:
       'لم أتمكن من الرد في الوقت الحالي. تواصل مع العيادة عبر واتساب على ‎+216 98 800 749‎ وسنرد عليك بسرعة.',
     typing: 'المساعد يكتب الآن',
-    tapHint: 'احجز بنقرة واحدة',
+    tapHint: 'بنقرة واحدة',
     bookWhatsapp: 'احجز عبر واتساب',
   },
   en: {
@@ -54,7 +110,7 @@ const STRINGS: Record<
     error:
       'I could not answer just now. Contact the clinic on WhatsApp at +216 98 800 749 and we will reply quickly.',
     typing: 'Assistant is typing',
-    tapHint: 'Book in one tap',
+    tapHint: 'In one tap',
     bookWhatsapp: 'Book on WhatsApp',
   },
 }
@@ -100,7 +156,8 @@ export function ChatWidget() {
       })
       const data = await res.json().catch(() => null)
       const reply = data && typeof data.reply === 'string' && data.reply.trim() ? data.reply : s.error
-      setMessages([...next, { role: 'assistant', text: reply, whatsapp: data?.whatsapp === true }])
+      const cards = Array.isArray(data?.cards) ? (data.cards as CardKind[]).filter((c) => c in CARD_DEFS) : []
+      setMessages([...next, { role: 'assistant', text: reply, cards }])
     } catch {
       setMessages([...next, { role: 'assistant', text: s.error }])
     } finally {
@@ -116,7 +173,7 @@ export function ChatWidget() {
             <img
               src="/images/chat-icon.png"
               alt=""
-              className="size-9 shrink-0 rounded-[28%] bg-white object-cover ring-1 ring-white/40"
+              className="size-10 shrink-0 object-contain drop-shadow-md"
             />
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm font-semibold">{s.title}</span>
@@ -144,27 +201,33 @@ export function ChatWidget() {
                 >
                   {m.text}
                 </div>
-                {m.role === 'assistant' && m.whatsapp && (
-                  <div className="mt-2 w-[85%]">
-                    <div className="mb-1 flex items-center gap-1 text-[11px] font-bold text-[#128C4B]">
+                {m.role === 'assistant' && m.cards && m.cards.length > 0 && (
+                  <div className="mt-2 flex w-[85%] flex-col gap-2">
+                    <div className="flex items-center gap-1 text-[11px] font-bold text-[#128C4B]">
                       <ArrowDown className="size-3.5 animate-bounce" />
                       {s.tapHint}
                     </div>
-                    <a
-                      href={CLINIC.whatsapp}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-3 rounded-2xl bg-[#25D366] px-4 py-3 text-white shadow-md shadow-[#25D366]/30 transition-transform hover:scale-[1.02]"
-                    >
-                      <WhatsAppIcon className="size-6 shrink-0" />
-                      <span className="min-w-0 flex-1">
-                        <span className="block text-sm font-bold">{s.bookWhatsapp}</span>
-                        <span className="block text-xs opacity-90" dir="ltr">
-                          {CLINIC.phoneDisplay}
-                        </span>
-                      </span>
-                      <ChevronRight className="size-5 shrink-0 rtl:-scale-x-100" />
-                    </a>
+                    {m.cards.map((kind) => {
+                      const def = CARD_DEFS[kind]
+                      const Icon = def.Icon
+                      return (
+                        <a
+                          key={kind}
+                          href={def.href}
+                          {...(def.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                          className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-white shadow-md transition-transform hover:scale-[1.02] ${def.bg}`}
+                        >
+                          <Icon className="size-6 shrink-0" />
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-sm font-bold">{def.label[lang]}</span>
+                            <span className="block text-xs opacity-90" dir="ltr">
+                              {def.sub[lang]}
+                            </span>
+                          </span>
+                          <ChevronRight className="size-5 shrink-0 rtl:-scale-x-100" />
+                        </a>
+                      )
+                    })}
                   </div>
                 )}
               </div>
@@ -225,16 +288,16 @@ export function ChatWidget() {
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-label={s.open}
-        className="fixed bottom-5 right-5 z-50 flex items-center gap-2.5 rounded-full bg-white py-2 pl-2 pr-4 shadow-xl shadow-black/20 ring-1 ring-black/10 transition-transform hover:scale-105"
+        className="fixed bottom-5 right-5 z-50 flex items-center gap-2.5 rounded-full bg-gradient-to-br from-[#14273D] via-navy to-[#2E6E9E] py-2 pl-2 pr-4 text-navy-foreground shadow-xl shadow-navy/30 ring-1 ring-white/25 transition-transform hover:scale-105"
       >
         {open ? (
-          <span className="flex size-10 items-center justify-center rounded-full bg-navy text-navy-foreground">
+          <span className="flex size-10 items-center justify-center rounded-full bg-white/15">
             <X className="size-5" />
           </span>
         ) : (
-          <img src="/images/chat-icon.png" alt="" className="size-10 rounded-[28%] object-cover" />
+          <img src="/images/chat-icon.png" alt="" className="size-10 object-contain drop-shadow" />
         )}
-        <span className="hidden text-sm font-semibold text-navy sm:inline">{s.title}</span>
+        <span className="hidden text-sm font-semibold sm:inline">{s.title}</span>
       </button>
     </>
   )
