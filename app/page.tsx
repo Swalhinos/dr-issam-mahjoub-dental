@@ -15,6 +15,7 @@ import { AppointmentForm } from '@/components/appointment-form'
 import { ContactMap } from '@/components/contact-map'
 import { SiteFooter } from '@/components/site-footer'
 import { WhatsAppButton } from '@/components/whatsapp-button'
+import { ChatWidget } from '@/components/chat-widget'
 
 export default function Page() {
   return (
@@ -35,6 +36,7 @@ export default function Page() {
       </main>
       <SiteFooter />
       <WhatsAppButton />
+      <ChatWidget />
     </LanguageProvider>
   )
 }
