@@ -28,11 +28,52 @@ const FALLBACKS = {
   en: 'Thank you for your message! I could not process your request just now. For a quick answer, contact the clinic on WhatsApp at +216 98 800 749.',
 }
 
+const LANGUAGE_NAMES = { ar: 'Arabic (العربية)', fr: 'French (français)', en: 'English' }
+const ARABIC_SCRIPT = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]/
+
 function json(statusCode, obj) {
   return {
     statusCode,
     headers: { 'Content-Type': 'application/json; charset=utf-8' },
     body: JSON.stringify(obj),
+  }
+}
+
+async function askGemini(apiKey, model, systemPrompt, contents, timeoutMs) {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+      {
+        method: 'POST',
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': apiKey,
+        },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: systemPrompt }] },
+          contents,
+          // thinkingBudget 0: these models otherwise "think" for tens of
+          // seconds before answering — fatal for a chat widget.
+          generationConfig: { temperature: 0.4, maxOutputTokens: 320, thinkingConfig: { thinkingBudget: 0 } },
+        }),
+      },
+    )
+    if (!res.ok) {
+      console.error('Gemini upstream error', model, res.status)
+      return null
+    }
+    const data = await res.json()
+    const parts = data?.candidates?.[0]?.content?.parts || []
+    const reply = parts.map((p) => p.text || '').join('').trim()
+    return reply || null
+  } catch (err) {
+    console.error('Gemini attempt failed', model, err?.name || err)
+    return null
+  } finally {
+    clearTimeout(timer)
   }
 }
 
@@ -69,34 +110,21 @@ export const handler = async (event) => {
     return json(200, { reply: fallback, configured: false })
   }
 
-  const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash'
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`
-
-  try {
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-goog-api-key': apiKey,
-      },
-      body: JSON.stringify({
-        system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
-        contents: messages,
-        generationConfig: { temperature: 0.4, maxOutputTokens: 400 },
-      }),
-    })
-
-    if (!res.ok) {
-      console.error('Gemini upstream error', res.status, await res.text().catch(() => ''))
-      return json(200, { reply: fallback })
-    }
-
-    const data = await res.json()
-    const parts = data?.candidates?.[0]?.content?.parts || []
-    const reply = parts.map((p) => p.text || '').join('').trim()
-    return json(200, { reply: reply || fallback })
-  } catch (err) {
-    console.error('Chat function error', err)
-    return json(200, { reply: fallback })
+  // Hard language directive: if the visitor wrote in Arabic script, the reply
+  // MUST be Arabic — this overrides any language anchoring from earlier turns.
+  const lastUserText = [...rawMessages].reverse().find((m) => m && m.role !== 'assistant')?.text || ''
+  let systemPrompt = SYSTEM_PROMPT
+  if (ARABIC_SCRIPT.test(lastUserText)) {
+    systemPrompt += `\n\nLANGUAGE OVERRIDE: The visitor's last message is written in Arabic. You MUST reply entirely in ${LANGUAGE_NAMES.ar}, whatever language was used earlier in the conversation.`
   }
+
+  // Model chain: fastest lite model first, then the configured model, then
+  // the earlier lite fallback — a single model outage or slowdown never
+  // takes the assistant down.
+  const models = [...new Set(['gemini-2.5-flash-lite', process.env.GEMINI_MODEL, 'gemini-2.5-flash', 'gemini-3.5-flash-lite'].filter(Boolean))]
+  for (const model of models) {
+    const reply = await askGemini(apiKey, model, systemPrompt, messages, 15000)
+    if (reply) return json(200, { reply })
+  }
+  return json(200, { reply: fallback })
 }
