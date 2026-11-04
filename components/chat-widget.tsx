@@ -5,6 +5,7 @@ import { ArrowDown, CalendarCheck, ChevronRight, MapPin, Phone, Send, X } from '
 import { useLanguage } from '@/lib/language-context'
 import { CLINIC, type Lang } from '@/lib/translations'
 import { WhatsAppIcon } from '@/components/whatsapp-icon'
+import { faqAnswer } from '@/lib/chat-faq'
 import { FacebookIcon, InstagramIcon } from '@/components/brand-icons'
 
 type CardKind = 'whatsapp' | 'booking' | 'maps' | 'phone' | 'facebook' | 'instagram'
@@ -137,35 +138,31 @@ export function ChatWidget() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
   }, [messages, sending, open])
 
-  async function send() {
+  function send() {
     const text = input.trim()
     if (!text || sending) return
     const next: ChatMessage[] = [...messages, { role: 'user', text }]
     setMessages(next)
     setInput('')
     setSending(true)
-    try {
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        // The static greeting stays local so it never anchors the model's language.
-        // If the visitor typed Arabic script, ask for Arabic so even a fallback
-        // reply comes back in the visitor's language.
-        body: JSON.stringify({
-          messages: next.filter((m) => !m.local),
-          lang: /[\u0600-\u06FF]/.test(text) ? 'ar' : lang,
-        }),
-      })
-      const data = await res.json().catch(() => null)
-      const reply = data && typeof data.reply === 'string' && data.reply.trim() ? data.reply : s.error
-      const cards = Array.isArray(data?.cards) ? (data.cards as CardKind[]).filter((c) => c in CARD_DEFS) : []
-      const answerLang = (['fr', 'ar', 'en'].includes(data?.answerLang) ? data.answerLang : lang) as Lang
-      setMessages([...next, { role: 'assistant', text: reply, cards, answerLang }])
-    } catch {
-      setMessages([...next, { role: 'assistant', text: s.error }])
-    } finally {
+    // The assistant is fully local now: the answer is computed instantly
+    // from the clinic's approved FAQ (lib/chat-faq.ts) — no API call, no
+    // waiting on a server. A short "typing" pause keeps the conversation
+    // feeling natural before the answer appears.
+    const a = faqAnswer(text, lang)
+    const delay = Math.min(1400, Math.max(650, 450 + a.text.length * 4))
+    window.setTimeout(() => {
+      setMessages([
+        ...next,
+        {
+          role: 'assistant',
+          text: a.text,
+          cards: (a.cards || []).filter((c): c is CardKind => c in CARD_DEFS),
+          answerLang: a.answerLang,
+        },
+      ])
       setSending(false)
-    }
+    }, delay)
   }
 
   return (
@@ -257,7 +254,7 @@ export function ChatWidget() {
               className="flex items-center gap-2"
               onSubmit={(e) => {
                 e.preventDefault()
-                void send()
+                send()
               }}
             >
               <input
